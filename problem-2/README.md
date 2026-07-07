@@ -2,6 +2,12 @@
 
 A production-minded token swap form. **React 18 + TypeScript (strict) + Vite**, zero runtime dependencies beyond React — every component, style and interaction is hand-built.
 
+![Swap form with live quote](docs/swap-form.png)
+
+| Token picker (search + keyboard nav) | Success receipt |
+|---|---|
+| ![Token picker](docs/token-picker.png) | ![Success](docs/success.png) |
+
 ## Run it
 
 ```bash
