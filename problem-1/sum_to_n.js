@@ -18,10 +18,12 @@
  * Space: O(1)
  *
  * This is the one you'd ship to production: constant time regardless of n,
- * no iteration, no stack usage. The multiplication n * (n + 1) stays exact
- * because the task guarantees the *result* fits in Number.MAX_SAFE_INTEGER,
- * and the intermediate product is exactly 2x the result (still well inside
- * the 2^53 exact-integer range).
+ * no iteration, no stack usage. The multiplication n * (n + 1) stays exact,
+ * but not because it fits in 2^53 — at the largest safe n it is ~2^54.
+ * Above 2^53 doubles represent only *even* integers exactly, and a product
+ * of two consecutive integers is always even, so the intermediate (2x the
+ * result, result <= MAX_SAFE_INTEGER per the task) is exactly representable.
+ * The test file pins this at the exact boundary (n = 134,217,727).
  */
 var sum_to_n_a = function (n) {
   var sign = n < 0 ? -1 : 1;

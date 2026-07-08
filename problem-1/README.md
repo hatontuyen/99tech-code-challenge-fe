@@ -24,7 +24,7 @@ The spec doesn't define behavior for `n <= 0` while stating the input is *any* i
 - `sum_to_n(0) === 0`
 - `sum_to_n(-5) === -15` (symmetric: `sum_to_n(-n) === -sum_to_n(n)`)
 
-**Safe-integer reasoning is documented, not assumed.** The closed form computes `n * (n + 1)` before dividing; that intermediate is exactly 2× the final result, so if the result fits in `Number.MAX_SAFE_INTEGER` (guaranteed by the task), the intermediate is still exact.
+**Safe-integer reasoning is documented, not assumed.** The closed form computes `n * (n + 1)` before dividing — at the largest safe `n` that intermediate is ~2⁵⁴, *outside* the 2⁵³ safe range. It is still exact: above 2⁵³ doubles represent exactly the even integers (up to 2⁵⁴), and a product of two consecutive integers is always even. The test suite pins this at the exact boundary (`n = 134,217,727`, the largest `n` whose sum is a safe integer).
 
 **The implementations verify each other.** The test file cross-checks all three on fixed edge cases plus 500 randomized inputs, and asserts the odd-function property `f(-n) === -f(n)`.
 
@@ -32,5 +32,5 @@ The spec doesn't define behavior for `n <= 0` while stating the input is *any* i
 
 ```bash
 node sum_to_n.test.js
-# PASS all 9 fixed cases + 500 randomized property checks (x3 implementations)
+# PASS all 9 fixed cases + 500 randomized property checks (x3 implementations) + safe-integer boundary
 ```
