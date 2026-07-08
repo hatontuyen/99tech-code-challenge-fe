@@ -236,6 +236,10 @@ export function SwapCard() {
         submit();
       }}
     >
+      {/* One switch locks every control (inputs, token pickers, flip, quick-fill,
+          refresh) while the simulated transaction is in flight — the quote the
+          user confirmed is the quote that executes. */}
+      <fieldset className="card__fieldset" disabled={phase === 'submitting'}>
       <div className="card__header">
         <h1>Swap</h1>
         {fetchedAt && (
@@ -335,6 +339,7 @@ export function SwapCard() {
         {phase === 'submitting' && <span className="spinner" aria-hidden="true" />}
         {buttonLabel}
       </button>
+      </fieldset>
 
       {modalFor && (
         <TokenSelectModal

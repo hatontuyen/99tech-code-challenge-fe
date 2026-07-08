@@ -53,6 +53,9 @@ test('max-fill, submit, and success receipt', async ({ page }) => {
   await page.click('.mini-btn >> nth=1'); // Max
   await expect(page.locator('button[type=submit]')).toBeEnabled();
   await page.click('button[type=submit]');
+  // While the (simulated) transaction is in flight the whole form is locked —
+  // the quote the user confirmed is the quote that executes.
+  await expect(page.locator('#amount-from')).toBeDisabled();
   await expect(page.locator('.card--success')).toBeVisible({ timeout: 5_000 });
   await expect(page.locator('.success-summary')).toContainText('→');
 
