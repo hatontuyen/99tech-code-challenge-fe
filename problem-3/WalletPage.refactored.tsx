@@ -15,7 +15,6 @@ interface WalletBalance {
 interface FormattedWalletBalance extends WalletBalance {
   priority: number;
   formatted: string;
-  usdValue: number;
 }
 
 // --- Pure helpers (module scope: created once, not per render) --------------
@@ -34,7 +33,7 @@ const getPriority = (blockchain: Blockchain): number =>
   PRIORITY[blockchain] ?? UNKNOWN_PRIORITY;
 
 const formatAmount = (amount: number): string =>
-  amount.toLocaleString('en-US', { maximumFractionDigits: 6 }); // toFixed() truncated to 0 decimals
+  amount.toLocaleString('en-US', { maximumFractionDigits: 6 }); // toFixed() rounded to 0 decimals (0.95 → "1")
 
 // --- Component ---------------------------------------------------------------
 
@@ -44,39 +43,44 @@ const WalletPage = ({ children, ...rest }: Props) => {
   const balances = useWalletBalances();
   const prices = usePrices();
 
-  // One pass: filter -> decorate with priority (computed ONCE per item,
-  // not O(n log n) times inside the comparator) -> sort -> format.
-  const rows = useMemo(() => {
+  // Decorate -> filter -> sort: getPriority runs exactly once per item (the
+  // original ran it O(n log n) times inside the comparator). Depends on
+  // `balances` ONLY — a price tick must not re-filter/re-sort/re-format the
+  // list (that was §3.2, the biggest real-world perf issue in the original),
+  // and nothing in this pipeline reads prices.
+  const sortedBalances = useMemo(() => {
     return balances
-      .filter(
-        (balance: WalletBalance) =>
-          getPriority(balance.blockchain) > UNKNOWN_PRIORITY &&
-          balance.amount > 0, // original kept empty wallets and dropped funded ones
-      )
       .map(
         (balance: WalletBalance): FormattedWalletBalance => ({
           ...balance,
           priority: getPriority(balance.blockchain),
           formatted: formatAmount(balance.amount),
-          // Guard: a token without a quote renders $0.00, not NaN.
-          usdValue: (prices[balance.currency] ?? 0) * balance.amount,
         }),
+      )
+      .filter(
+        (balance) =>
+          balance.priority > UNKNOWN_PRIORITY &&
+          balance.amount > 0, // original kept empty wallets and dropped funded ones
       )
       .sort(
         (lhs, rhs) =>
           rhs.priority - lhs.priority || // always returns a number (original returned undefined on ties)
           lhs.currency.localeCompare(rhs.currency), // deterministic tie-breaker (Zilliqa & Neo share 20)
       );
-  }, [balances, prices]); // `prices` is genuinely used now (usdValue); no phantom deps
+  }, [balances]);
 
   return (
     <Box {...rest}>
-      {rows.map((balance) => (
+      {sortedBalances.map((balance) => (
         <WalletRow
           // Stable identity — index keys mis-reconcile a sorted/filtered list.
           key={`${balance.blockchain}-${balance.currency}`}
           amount={balance.amount}
-          usdValue={balance.usdValue}
+          // usdValue is the only price-dependent value, and it's O(n) cheap —
+          // computed at render instead of inside the memo, so price ticks
+          // re-multiply n numbers without touching the sorted pipeline.
+          // Guard: a token without a quote renders $0.00, not NaN.
+          usdValue={(prices[balance.currency] ?? 0) * balance.amount}
           formattedAmount={balance.formatted}
         />
       ))}

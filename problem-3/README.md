@@ -104,6 +104,6 @@ It's a pure function with no closure over props/state — it should live outside
 The refactored version ([`WalletPage.refactored.tsx`](./WalletPage.refactored.tsx)):
 
 1. Fixes all five bugs (filter logic, undefined vars, missing field, unused formatting, undefined `classes`).
-2. Collapses filter → decorate → sort → format into **one memoized pipeline** with priorities computed once per item. USD values are folded into the same pipeline, so `prices` becomes a *genuine* dependency instead of a phantom one.
+2. Collapses the list work into **one memoized pipeline** (decorate → filter → sort) with priorities computed exactly once per item, depending on `balances` only. USD value — the sole price-dependent number — is computed at render time, so a price tick re-multiplies n numbers but never re-runs the filter/sort/format (the §3.2 issue stays fixed instead of being reintroduced under a now-"legitimate" dependency).
 3. Replaces the `switch`/`any` with a typed `Record<Blockchain, number>` at module scope.
 4. Uses stable keys, guards missing prices, formats with explicit precision.
