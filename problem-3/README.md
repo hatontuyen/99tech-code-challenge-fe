@@ -60,7 +60,7 @@ if (leftPriority > rightPriority) return -1;
 else if (rightPriority > leftPriority) return 1;
 // ❌ implicitly returns undefined when equal
 ```
-Returning `undefined` violates the comparator contract (must return a number); behaviour is then implementation-defined and the sort is not guaranteed stable across engines. Zilliqa and Neo share priority 20, so this path *is* hit. **Fix:** `return rightPriority - leftPriority` (and add a deterministic tie-breaker, e.g. currency name).
+Returning `undefined` violates the comparator's declared contract (must return a number) — TypeScript with `noImplicitReturns` rejects this outright. At runtime it happens to work by accident: the spec coerces `undefined` → `NaN` → `+0` ("elements are equal"), and sort is guaranteed stable since ES2019 — but the code is *relying on an obscure coercion chain* instead of stating the intent, and Zilliqa and Neo share priority 20, so this path *is* hit: their relative order silently depends on input order rather than on any deliberate rule. **Fix:** `return rightPriority - leftPriority` (and add a deterministic tie-breaker, e.g. currency name).
 
 ### 2.3 `prices[balance.currency]` can be `undefined` → `NaN`
 `usdValue = prices[balance.currency] * balance.amount` renders `NaN` for any token without a price. **Fix:** `(prices[balance.currency] ?? 0) * balance.amount`.
@@ -82,7 +82,7 @@ It runs once per element in `filter`, then **twice per comparison** in `sort`. *
 The memoized computation never reads `prices`, but lists it as a dependency — so every price tick (which for crypto prices is constant) re-filters and re-sorts the entire list for nothing. This is the single biggest *real-world* perf issue here. **Fix:** depend on `[balances]` only.
 
 ### 3.3 `formattedBalances` and `rows` are rebuilt every render, and one is dead code
-`formattedBalances` is pure waste (never used — see 1.4). `rows` runs `.map` on every render even when nothing changed. **Fix:** delete the dead computation; derive rows in one memoized pipeline.
+`formattedBalances` is pure waste (never used — see 1.4). `rows` re-runs on every render even when nothing changed. **Fix:** delete the dead computation and memoize the *expensive* work (filter/sort/format). The per-row map itself is O(n) cheap and deliberately stays at render, so the price-dependent `usdValue` never drags `prices` into the pipeline's dependencies (see Refactor summary #2).
 
 ### 3.4 `getPriority` is re-created every render
 It's a pure function with no closure over props/state — it should live outside the component (module scope), not be reallocated per render.
