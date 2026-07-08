@@ -69,8 +69,12 @@ test('insufficient balance disables submit and explains why', async ({ page }) =
 });
 
 test('amount input sanitizes junk instead of blocking typing', async ({ page }) => {
-  await page.fill('#amount-from', 'abc1,5xyz');
+  await page.fill('#amount-from', 'abc1,5xyz'); // European decimal comma
   await expect(page.locator('#amount-from')).toHaveValue('1.5');
+  await page.fill('#amount-from', '1,234.56'); // US thousands paste — must NOT become 1.23456
+  await expect(page.locator('#amount-from')).toHaveValue('1234.56');
+  await page.fill('#amount-from', '1,234,567'); // grouped thousands, no decimals
+  await expect(page.locator('#amount-from')).toHaveValue('1234567');
 });
 
 test('no horizontal overflow on a small phone viewport', async ({ page }) => {

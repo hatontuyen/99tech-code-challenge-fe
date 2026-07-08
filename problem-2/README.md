@@ -41,7 +41,7 @@ npm run e2e      # Playwright end-to-end suite (boots the dev server itself)
 
 **The price feed and the icon repo disagree on symbol casing.** The feed says `STATOM` / `RATOM` / `STEVMOS`…, but the icons (and the tokens' own branding) are `stATOM` / `rATOM` / `stEVMOS` — and GitHub raw URLs are case-sensitive, so the naive icon URL 404s for five tokens. The app normalizes these (`src/lib/tokens.ts`), displays the branded casing, and still falls back to a two-letter monogram if any icon is missing. *This is the kind of data-quality mismatch worth reporting upstream rather than silently patching.*
 
-**Amount inputs are strings, not numbers.** Intermediate states like `0.` or `.5` are valid while typing; parsing to `number` too early destroys them. Input is sanitized (one decimal point, digits only, commas from locale-formatted pastes normalized) rather than blocked, so paste works.
+**Amount inputs are strings, not numbers.** Intermediate states like `0.` or `.5` are valid while typing; parsing to `number` too early destroys them. Input is sanitized (one decimal point, digits only) rather than blocked, so paste works. Commas are disambiguated, not blindly mapped: `1,234.56` (US thousands) → `1234.56` while `1,5` (European decimal) → `1.5` — a naive comma→dot rule would corrupt a US paste by ~1000×.
 
 **Selecting the counterpart token flips the pair** instead of erroring — matching what users of Uniswap-class UIs expect, and making an invalid state (ETH → ETH) unrepresentable rather than validated against.
 

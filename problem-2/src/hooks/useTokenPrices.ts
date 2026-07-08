@@ -47,9 +47,18 @@ export function useTokenPrices() {
 
   useEffect(() => {
     load();
-    const timer = setInterval(() => load(true), REFRESH_INTERVAL_MS);
+    // Skip refreshes while the tab is hidden; catch up as soon as it returns,
+    // so a user coming back never quotes against minutes-old prices.
+    const timer = setInterval(() => {
+      if (!document.hidden) load(true);
+    }, REFRESH_INTERVAL_MS);
+    const onVisibilityChange = () => {
+      if (!document.hidden) load(true);
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       abortRef.current?.abort();
     };
   }, [load]);

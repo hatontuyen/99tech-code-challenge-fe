@@ -1,7 +1,20 @@
-/** Sanitize free text into a valid decimal-in-progress ("12.", ".5", "0.05"). */
+/**
+ * Sanitize free text into a valid decimal-in-progress ("12.", ".5", "0.05").
+ *
+ * Commas are ambiguous: "1,234.56" (US thousands) vs "1,5" (European decimal).
+ * Naively mapping comma → dot corrupts a US paste by ~1000×, so decide first:
+ * - a dot is present            → commas are thousand separators, strip them
+ * - several commas, or exactly
+ *   one comma before a final
+ *   3-digit group ("1,234")     → thousand separators, strip them
+ * - otherwise ("1,5", "0,05")   → European decimal, comma becomes the dot
+ */
 export function sanitizeAmountInput(value: string): string {
-  // Normalize commas (paste from other locales), strip everything else.
-  let cleaned = value.replace(/,/g, '.').replace(/[^\d.]/g, '');
+  let cleaned = value.replace(/[^\d.,]/g, '');
+  const commaCount = (cleaned.match(/,/g) ?? []).length;
+  const commasAreThousands =
+    cleaned.includes('.') || commaCount > 1 || /,\d{3}$/.test(cleaned);
+  cleaned = commasAreThousands ? cleaned.replace(/,/g, '') : cleaned.replace(/,/g, '.');
   const firstDot = cleaned.indexOf('.');
   if (firstDot !== -1) {
     cleaned =

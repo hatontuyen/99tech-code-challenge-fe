@@ -26,6 +26,7 @@ export function TokenSelectModal({
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -64,6 +65,19 @@ export function TokenSelectModal({
     } else if (e.key === 'Enter' && filtered[activeIndex]) {
       e.preventDefault();
       onSelect(filtered[activeIndex]);
+    } else if (e.key === 'Tab') {
+      // Focus trap: aria-modal="true" promises focus stays in the dialog.
+      const focusables = modalRef.current?.querySelectorAll<HTMLElement>('button, input');
+      if (!focusables?.length) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
   };
 
@@ -74,6 +88,7 @@ export function TokenSelectModal({
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
+        ref={modalRef}
         className="modal"
         role="dialog"
         aria-modal="true"

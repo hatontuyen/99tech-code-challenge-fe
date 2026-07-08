@@ -47,11 +47,16 @@ export function SwapCard() {
     return () => clearInterval(t);
   }, []);
 
-  // Pick sensible defaults once prices land.
+  // Pick sensible defaults once prices land. The `to` side explicitly excludes
+  // whatever `from` resolved to, so a degenerate feed can't produce ETH → ETH.
   useEffect(() => {
     if (tokens.length && !fromSymbol && !toSymbol) {
-      setFromSymbol(tokens.find((t) => t.symbol === DEFAULT_FROM)?.symbol ?? tokens[0].symbol);
-      setToSymbol(tokens.find((t) => t.symbol === DEFAULT_TO)?.symbol ?? tokens[1]?.symbol);
+      const from = tokens.find((t) => t.symbol === DEFAULT_FROM)?.symbol ?? tokens[0].symbol;
+      setFromSymbol(from);
+      setToSymbol(
+        tokens.find((t) => t.symbol === DEFAULT_TO && t.symbol !== from)?.symbol ??
+          tokens.find((t) => t.symbol !== from)?.symbol,
+      );
     }
   }, [tokens, fromSymbol, toSymbol]);
 
@@ -119,7 +124,10 @@ export function SwapCard() {
   const flip = () => {
     setFromSymbol(toSymbol);
     setToSymbol(fromSymbol);
-    // Carry the numbers across so the quote stays visually continuous.
+    // Carry the numbers across: the side the user authored keeps their number
+    // (now on the other side) and stays authoritative. The derived side shifts
+    // slightly (~2× fee) because the fee now applies in the new direction —
+    // that's correct quoting, not drift.
     setAmounts({ from: derived.to, to: derived.from });
     setLastEdited(lastEdited === 'from' ? 'to' : 'from');
   };
